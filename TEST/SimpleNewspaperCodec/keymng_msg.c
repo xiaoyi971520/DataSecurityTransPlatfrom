@@ -47,6 +47,7 @@ int MsgEncode(void			*pStruct , /*in*/
 		//TODO
 		break;
 	case ID_MsgKey_Res:
+		ret = MsgKey_Res_Encode(pStruct,&pTemp);
 		//TODO
 		break;
 	default:
@@ -145,6 +146,7 @@ int MsgDecode(unsigned char *inData,/*in*/
 		return ret;
 	}
 	DER_ITCAST_FreeQueue(pTemp);
+	pTemp = NULL;
 
 	//解析type
 	ret = DER_ItAsn1_ReadInteger(pHeadBuf,&itype);
@@ -154,15 +156,17 @@ int MsgDecode(unsigned char *inData,/*in*/
 		printf("func DER_ItAsn1_ReadInteger() err:%d \n",ret);
 		return ret;
 	}
+	pTemp = pHeadBuf->next;
 
 	//根据type 解析对应的结构体
 	switch(itype)
 	{
 	case ID_MsgKey_Req:
-		MsgKey_Req_Decode(pHeadBuf->next->pData,pHeadBuf->next->dataLen,pStruct);
+		ret = MsgKey_Req_Decode(pTemp->pData,pTemp->dataLen,pStruct);
 		//TODO
 		break;
 	case  ID_MsgKey_Res:
+		ret = MsgKey_Res_Decode(pTemp->pData,pTemp->dataLen,pStruct);
 		//TODO
 		break;
 	default:
@@ -181,7 +185,6 @@ int MsgDecode(unsigned char *inData,/*in*/
 	type = itype;
 	DER_ITCAST_FreeQueue(pHeadBuf);
 	return ret;
-	
 }
 
 /*
@@ -213,6 +216,7 @@ int MsgMemFree(void **point,int type)
 			MsgKey_Req_Free(point);
 			break;
 		case ID_MsgKey_Res:
+			MsgKey_Res_Free(point);
 			break;
 		default:
 			break;
@@ -335,34 +339,6 @@ int MsgKey_Req_Encode(MsgKey_Req *pReq,ITCAST_ANYBUF **out)
 
 	return 0;
 }
-
-// 密钥请求报文 编码
-int MsgKey_Res_Encode(MsgKey_Res *pRes,ITCAST_ANYBUF **out)
-{
-	//int		rv;			//返回值
-	//char	clientId[12];	//客户端编号
-	//char	serverId[12];	//服务器编号
-	//unsigned char	r2[64];	//服务器随机数
-	//int		seckeyid;		//对称密钥编号
-	int ret = 0;
-	ITCAST_ANYBUF *pHead = NULL,*pTmp = NULL;
-	ITCAST_ANYBUF *pTempString = NULL;
-
-	//编码MsgKey_Res::rv
-	ret = DER_ItAsn1_WriteInteger(pRes->rv,&pHead);
-	if(0 != ret)
-	{
-		ret = 1;
-		printf("Encode MsgKey_Res::rv err:%d \n",ret);
-		return ret;
-	}
-	pTmp = pHead;
-
-	//编码MsgKey_Res::clientId
-	ret = DER_ITCAST_String_To_AnyBuf(&pTempString,pRes->clientId,strlen(pRes->clientId));
-
-}
-
 
 // 密钥请求报文 解码
 int MsgKey_Req_Decode(unsigned char *indata,int inlen,MsgKey_Req **pReq)
@@ -488,6 +464,224 @@ int MsgKey_Req_Decode(unsigned char *indata,int inlen,MsgKey_Req **pReq)
 	return 0;
 }
 
+// 密钥请求报文 编码
+int MsgKey_Res_Encode(MsgKey_Res *pRes,ITCAST_ANYBUF **out)
+{
+	int ret = 0;
+	ITCAST_ANYBUF *pHead = NULL,*pTmp = NULL;
+	ITCAST_ANYBUF *pTempString = NULL;
+
+	//编码MsgKey_Res::rv
+	ret = DER_ItAsn1_WriteInteger(pRes->rv,&pHead);
+	if(0 != ret)
+	{
+		ret = 1;
+		printf("Encode MsgKey_Res::rv err:%d \n",ret);
+		return ret;
+	}
+	pTmp = pHead;
+
+	//编码MsgKey_Res::clientId
+	ret = DER_ITCAST_String_To_AnyBuf(&pTempString,pRes->clientId,strlen(pRes->clientId));
+	if(0 != ret)
+	{
+		DER_ITCAST_FreeQueue(pHead);
+		ret = 1;
+		printf("Encode MsgKey_Res::clientId DER_ITCAST_String_T0_AnyBuf err:%d \n",ret);
+		return ret;
+	}
+	ret = DER_ItAsn1_WritePrintableString(pTempString,&pTmp->next);
+	if(0 != ret)
+	{
+		DER_ITCAST_FreeQueue(pHead);
+		DER_ITCAST_FreeQueue(pTempString);
+		ret = 1;
+		printf("Encode MsgKey_Res::clientId err:%d \n",ret);
+		return ret;
+	}
+	DER_ITCAST_FreeQueue(pTempString);
+	pTempString = NULL;
+	pTmp = pTmp->next;
+	
+	//编码MsgKey_Res::serverId
+	ret = DER_ITCAST_String_To_AnyBuf(&pTempString,pRes->serverId,strlen(pRes->serverId));
+	if(0 != ret)
+	{
+		DER_ITCAST_FreeQueue(pHead);
+		ret = 1;
+		printf("Encode MsgKey_Res::server DER_ITCAST_String_T0_AnyBuf err:%d \n",ret);
+		return ret;
+	}
+	ret = DER_ItAsn1_WritePrintableString(pTempString,&pTmp->next);
+	if(0 != ret)
+	{
+		DER_ITCAST_FreeQueue(pHead);
+		DER_ITCAST_FreeQueue(pTempString);
+		ret = 1;
+		printf("Encode MsgKey_Res::serverId err:%d \n",ret);
+		return ret;
+	}
+	DER_ITCAST_FreeQueue(pTempString);
+	pTempString = NULL;
+	pTmp = pTmp->next;
+
+	//编码MsgKey_Res::r2
+	ret = DER_ITCAST_String_To_AnyBuf(&pTempString,pRes->r2,strlen(pRes->r2));
+	if(0 != ret)
+	{
+		DER_ITCAST_FreeQueue(pHead);
+		ret = 1;
+		printf("Encode MsgKey_Res::r2 DER_ITCAST_String_T0_AnyBuf err:%d \n",ret);
+		return ret;
+	}
+	ret = DER_ItAsn1_WritePrintableString(pTempString,&pTmp->next);
+	if(0 != ret)
+	{
+		DER_ITCAST_FreeQueue(pHead);
+		DER_ITCAST_FreeQueue(pTempString);
+		ret = 1;
+		printf("Encode MsgKey_Res::r2 err:%d \n",ret);
+		return ret;
+	}
+	DER_ITCAST_FreeQueue(pTempString);
+	pTempString = NULL;
+	pTmp = pTmp->next;
+
+	//编码MsgKey_Res::seckeyid
+	ret = DER_ItAsn1_WriteInteger(pRes->seckeyid,&pTmp->next);
+	if(0 != ret)
+	{
+		DER_ITCAST_FreeQueue(pHead);
+		ret = 1;
+		printf("Encode MsgKey_Res::seckeyid err:%d \n",ret);
+		return ret;
+	}
+
+	//编码整体结构
+	ret = DER_ItAsn1_WriteSequence(pHead,out);
+	if(0 != ret)
+	{
+		DER_ITCAST_FreeQueue(pHead);
+		ret = 1;
+		printf("Encode MsgKey_Res err:%d \n",ret);
+		return ret;
+	}
+
+	return 0;
+}
+
+//请求报文 解码
+int MsgKey_Res_Decode(unsigned char *indata,int inlen,MsgKey_Res **pRes)
+{
+	int ret;
+	ITCAST_ANYBUF *pHead = NULL,*pTmp = NULL,*pStringTemp = NULL;
+	MsgKey_Res *pMKR = NULL;
+	ITCAST_ANYBUF *itAnyBuf = NULL;
+
+	MsgKey_Res *pMsgKeyRes = (MsgKey_Res *)malloc(sizeof(MsgKey_Res));
+	memset(pMsgKeyRes,0,sizeof(MsgKey_Res));
+
+	//创建ITCAST_ANYBUF 结构体
+	itAnyBuf = (ITCAST_ANYBUF *)malloc(sizeof(ITCAST_ANYBUF));
+	if (itAnyBuf == NULL)
+	{
+		ret = 1;
+		printf("func decode MsgKey_Req ITCAST_ANYBUF err:%d malloc err \n", ret);
+		return ret;
+	}
+	itAnyBuf->pData = (unsigned char *)malloc(inlen);
+	if (itAnyBuf->pData == NULL)
+	{
+		ret = 2;
+		printf("func decode MsgKey_Req ITCAST_ANYBUF pData err:%d malloc err \n", ret);
+		return ret;
+	}
+	memcpy(itAnyBuf->pData,indata,inlen);
+	itAnyBuf->dataLen = inlen;
+	itAnyBuf->next = NULL;
+	itAnyBuf->prev = NULL;
+
+	//解码整体结构
+	ret = DER_ItAsn1_ReadSequence(itAnyBuf,&pHead);
+	if(0 != ret)
+	{
+		DER_ITCAST_FreeQueue(itAnyBuf);
+		ret = 1;
+		printf(" Decode MsgKey_Req err:%d \n",ret);
+		return ret;
+	}
+	DER_ITCAST_FreeQueue(itAnyBuf);
+	pTmp = pHead;
+
+	//解码MsgKey_Res::rv
+	ret = DER_ItAsn1_ReadInteger(pTmp,&(pMsgKeyRes->rv));
+	if(0 != ret)
+	{
+		DER_ITCAST_FreeQueue(pHead);
+		ret = 1;
+		printf(" Decode MsgKey_Req err:%d \n",ret);
+		return ret;
+	}
+	pTmp = pTmp->next;
+
+	//解码MsgKey_Res::clientId
+	ret = DER_ItAsn1_ReadPrintableString(pTmp,&pStringTemp);
+	if(0 != ret)
+	{
+		DER_ITCAST_FreeQueue(pHead);
+		ret = 1;
+		printf(" Decode MsgKey_Req::clientId err:%d \n",ret);
+		return ret;
+	}
+	memcpy(pMsgKeyRes->clientId,pStringTemp->pData,pStringTemp->dataLen);
+	DER_ITCAST_FreeQueue(pStringTemp);
+	pStringTemp = NULL;
+	pTmp = pTmp->next;
+
+	//解码MsgKey_Res::serverId
+	ret = DER_ItAsn1_ReadPrintableString(pTmp,&pStringTemp);
+	if(0 != ret)
+	{
+		DER_ITCAST_FreeQueue(pHead);
+		ret = 1;
+		printf(" Decode MsgKey_Req::serverId err:%d \n",ret);
+		return ret;
+	}
+	memcpy(pMsgKeyRes->serverId,pStringTemp->pData,pStringTemp->dataLen);
+	DER_ITCAST_FreeQueue(pStringTemp);
+	pStringTemp = NULL;
+	pTmp = pTmp->next;
+
+	//解码MsgKey_Res::r2
+	ret = DER_ItAsn1_ReadPrintableString(pTmp,&pStringTemp);
+	if(0 != ret)
+	{
+		DER_ITCAST_FreeQueue(pHead);
+		ret = 1;
+		printf(" Decode MsgKey_Req::r2 err:%d \n",ret);
+		return ret;
+	}
+	memcpy(pMsgKeyRes->r2,pStringTemp->pData,pStringTemp->dataLen);
+	DER_ITCAST_FreeQueue(pStringTemp);
+	pStringTemp = NULL;
+	pTmp = pTmp->next;
+
+	//解码MsgKey_Res::seckeyid
+	ret = DER_ItAsn1_ReadInteger(pTmp,&(pMsgKeyRes->seckeyid));
+	if(0 != ret)
+	{
+		DER_ITCAST_FreeQueue(pHead);
+		ret = 1;
+		printf(" Decode MsgKey_Req::seckeyid err:%d \n",ret);
+		return ret;
+	}
+
+	DER_ITCAST_FreeQueue(pHead);
+	*pRes = pMsgKeyRes;
+	return 0;
+}
+
+
 // 密钥请求报文 资源释放
 int MsgKey_Req_Free(MsgKey_Req **pReq)
 {
@@ -501,6 +695,22 @@ int MsgKey_Req_Free(MsgKey_Req **pReq)
 
 	free(pTemp);
 	*pReq = NULL;
+
+	return 0;
+}
+// 密钥请求报文 资源释放
+int MsgKey_Res_Free(MsgKey_Res **pRes)
+{
+	MsgKey_Res *pTemp = NULL;
+	if(NULL == pRes)
+		return 0;
+
+	pTemp = *pRes;
+	if(NULL == pTemp)
+		return 0;
+
+	free(pTemp);
+	*pRes = NULL;
 
 	return 0;
 }

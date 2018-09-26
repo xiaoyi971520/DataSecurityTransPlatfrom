@@ -251,22 +251,31 @@ int main()
 	int ret = 0;
 
 	MsgKey_Req *poutReq = NULL;
+	MsgKey_Res *poutRes = NULL;
 	int itype = 0;
 
-	MsgKey_Req *pReq = (MsgKey_Req *)malloc(sizeof(MsgKey_Req));
-	memset(pReq,0,sizeof(MsgKey_Req));
-	pReq->cmdType = 3;
+	//MsgKey_Req *pReq = (MsgKey_Req *)malloc(sizeof(MsgKey_Req));
+	//memset(pReq,0,sizeof(MsgKey_Req));
+	//pReq->cmdType = 3;
 
-	strcpy(pReq->clientId ,"192.168.31.1");
-	strcpy(pReq->authCode , "test1111");
-	strcpy(pReq->serverId , "192.168.31.2");
-	strcpy(pReq->r1 , "729438394304");
-
-	ret = MsgEncode((void*)pReq,ID_MsgKey_Req,&pout,&poutlen);
-
-
-	ret = MsgDecode(pout,poutlen,&poutReq,&itype);
+	//strcpy(pReq->clientId ,"192.168.31.1");
+	//strcpy(pReq->authCode , "test1111");
+	//strcpy(pReq->serverId , "192.168.31.2");
+	//strcpy(pReq->r1 , "729438394304");
+	//ret = MsgEncode((void*)pReq,ID_MsgKey_Req,&pout,&poutlen);
+	//ret = MsgDecode(pout,poutlen,&poutReq,&itype);
 	
+	MsgKey_Res *pRes = (MsgKey_Res *)malloc(sizeof(MsgKey_Res));
+	memset(pRes,0,sizeof(MsgKey_Res));
+
+	pRes->rv = 2;
+	memcpy(pRes->clientId,"clientId",strlen("clientId"));
+	memcpy(pRes->serverId,"serverId",strlen("serverId"));
+	memcpy(pRes->r2,"r2r2r2r2",strlen("r2r2r2r2"));
+	pRes->seckeyid = 3456;
+
+	ret = MsgEncode((void*)pRes,ID_MsgKey_Res,&pout,&poutlen);
+	ret = MsgDecode(pout,poutlen,&poutRes,&itype);
 
 	return 0;
 }
