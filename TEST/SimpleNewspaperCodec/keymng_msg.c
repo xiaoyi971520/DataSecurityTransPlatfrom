@@ -336,6 +336,33 @@ int MsgKey_Req_Encode(MsgKey_Req *pReq,ITCAST_ANYBUF **out)
 	return 0;
 }
 
+// 密钥请求报文 编码
+int MsgKey_Res_Encode(MsgKey_Res *pRes,ITCAST_ANYBUF **out)
+{
+	//int		rv;			//返回值
+	//char	clientId[12];	//客户端编号
+	//char	serverId[12];	//服务器编号
+	//unsigned char	r2[64];	//服务器随机数
+	//int		seckeyid;		//对称密钥编号
+	int ret = 0;
+	ITCAST_ANYBUF *pHead = NULL,*pTmp = NULL;
+	ITCAST_ANYBUF *pTempString = NULL;
+
+	//编码MsgKey_Res::rv
+	ret = DER_ItAsn1_WriteInteger(pRes->rv,&pHead);
+	if(0 != ret)
+	{
+		ret = 1;
+		printf("Encode MsgKey_Res::rv err:%d \n",ret);
+		return ret;
+	}
+	pTmp = pHead;
+
+	//编码MsgKey_Res::clientId
+	ret = DER_ITCAST_String_To_AnyBuf(&pTempString,pRes->clientId,strlen(pRes->clientId));
+
+}
+
 
 // 密钥请求报文 解码
 int MsgKey_Req_Decode(unsigned char *indata,int inlen,MsgKey_Req **pReq)

@@ -23,9 +23,9 @@ typedef struct _MsgKey_Req
 {
 	// 1 密钥更新	2 密钥校验	3 密钥注销
 	int		cmdType;	//报文命令码
-	char	clientId[16];	//客户端编号
+	char	clientId[12];	//客户端编号
 	char	authCode[16];	//认证码
-	char	serverId[16];	//服务器端ip编码
+	char	serverId[12];	//服务器端ip编码
 	unsigned char	r1[64];			//客户端随机数
 } MsgKey_Req;
 
@@ -37,7 +37,7 @@ typedef struct _MsgKey_Res{
 	char	serverId[12];	//服务器编号
 	unsigned char	r2[64];	//服务器随机数
 	int		seckeyid;		//对称密钥编号
-};
+} MsgKey_Res;
 
 /*
  pstruct :	输入的报文数据 ; (指向相应结构体的指针) 
